@@ -1,6 +1,6 @@
 package fctreddit.api.Interfaces;
 
-public interface Image {
+public interface Images {
 
 	/**
 	 * Create an image

@@ -1,14 +1,14 @@
-package lab4.clients;
+package fctreddit.Clients;
 
 import java.io.IOException;
 import java.net.URI;
 import java.util.logging.Logger;
 
-import lab4.api.User;
-import lab4.api.java.Result;
-import lab4.clients.java.UsersClient;
-import lab4.clients.rest.RestUsersClient;
-import lab4.clients.grpc.GrpcUsersClient;
+import fctreddit.api.User;
+import fctreddit.api.Interfaces.Result;
+import fctreddit.Clients.java.UsersClient;
+import fctreddit.Clients.rest.RestUsersClient;
+import fctreddit.Clients.grpc.GrpcUsersClient;
 
 public class CreateUserClient {
 

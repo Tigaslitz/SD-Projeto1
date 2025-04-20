@@ -1,4 +1,4 @@
-package lab4.clients.grpc;
+package fctreddit.Clients.grpc;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -12,18 +12,18 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.internal.PickFirstLoadBalancerProvider;
-import lab4.api.User;
-import lab4.api.java.Result;
-import lab4.api.java.Result.ErrorCode;
-import lab4.clients.java.UsersClient;
-import lab4.impl.grpc.util.DataModelAdaptor;
-import lab4.impl.server.grpc.generated_java.UsersGrpc;
-import lab4.impl.server.grpc.generated_java.UsersProtoBuf.CreateUserArgs;
-import lab4.impl.server.grpc.generated_java.UsersProtoBuf.CreateUserResult;
-import lab4.impl.server.grpc.generated_java.UsersProtoBuf.GetUserArgs;
-import lab4.impl.server.grpc.generated_java.UsersProtoBuf.GetUserResult;
-import lab4.impl.server.grpc.generated_java.UsersProtoBuf.GrpcUser;
-import lab4.impl.server.grpc.generated_java.UsersProtoBuf.SearchUserArgs;
+import fctreddit.api.User;
+import fctreddit.api.Interfaces.Result;
+import fctreddit.api.Interfaces.Result.ErrorCode;
+import fctreddit.Clients.java.UsersClient;
+import fctreddit.Services.grpc.util.DataModelAdaptor;
+import fctreddit.Services.UserService.grpc.generated_java.UsersGrpc;
+import fctreddit.Services.UserService.grpc.generated_java.UsersProtoBuf.CreateUserArgs;
+import fctreddit.Services.UserService.grpc.generated_java.UsersProtoBuf.CreateUserResult;
+import fctreddit.Services.UserService.grpc.generated_java.UsersProtoBuf.GetUserArgs;
+import fctreddit.Services.UserService.grpc.generated_java.UsersProtoBuf.GetUserResult;
+import fctreddit.Services.UserService.grpc.generated_java.UsersProtoBuf.GrpcUser;
+import fctreddit.Services.UserService.grpc.generated_java.UsersProtoBuf.SearchUserArgs;
 
 public class GrpcUsersClient extends UsersClient {
 

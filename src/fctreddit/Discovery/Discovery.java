@@ -1,4 +1,4 @@
-package fctreddit.api.Discovery;
+package fctreddit.Discovery;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -9,6 +9,8 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.URI;
 import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Logger;
 
 /**
@@ -32,6 +34,8 @@ import java.util.logging.Logger;
  */
 public class Discovery {
 	private static Logger Log = Logger.getLogger(Discovery.class.getName());
+
+    private final Map<String, URI> services = new HashMap<>();
 
 	static {
 		// addresses some multicast issues on some TCP/IP stacks
@@ -62,7 +66,7 @@ public class Discovery {
 	 * @throws UnknownHostException 
 	 * @throws SocketException 
 	 */
-	Discovery(InetSocketAddress addr, String serviceName, String serviceURI) throws SocketException, UnknownHostException, IOException {
+	public Discovery(InetSocketAddress addr, String serviceName, String serviceURI) throws SocketException, UnknownHostException, IOException {
 		this.addr = addr;
 		this.serviceName = serviceName;
 		this.serviceURI = serviceURI;
@@ -75,7 +79,7 @@ public class Discovery {
 		this.ms.joinGroup(addr, NetworkInterface.getByInetAddress(InetAddress.getLocalHost()));
 	}
 
-	Discovery(InetSocketAddress addr) throws SocketException, UnknownHostException, IOException {
+	public Discovery(InetSocketAddress addr) throws SocketException, UnknownHostException, IOException {
 		this(addr, null, null);
 	}
 
@@ -125,7 +129,13 @@ public class Discovery {
 						System.out.printf("FROM %s (%s) : %s\n", pkt.getAddress().getHostName(),
 								pkt.getAddress().getHostAddress(), msg);
 						// TODO: to complete by recording the received information
-					}
+                            String receivedServiceName = msgElems[0];
+                            String receivedServiceURI = msgElems[1];
+
+                            synchronized (services) {
+                                services.put(receivedServiceName, URI.create(receivedServiceURI));
+                            }
+                    }
 				} catch (IOException e) {
 					// do nothing
 				}
@@ -137,14 +147,16 @@ public class Discovery {
 	 * Returns the known services.
 	 * 
 	 * @param serviceName the name of the service being discovered
-	 * @param minReplies  - minimum number of requested URIs. Blocks until the
-	 *                    number is satisfied.
 	 * @return an array of URI with the service instances discovered.
 	 * 
 	 */
-	public URI[] knownUrisOf(String serviceName, int minReplies) {
+	public URI knownUrisOf(String serviceName) {
 		// TODO: implement this method
-		throw new Error("Not Implemented...");
+        try{
+            return services.get(serviceName);
+        } catch (Exception e) {
+            return null;
+        }
 	}
 
 	// Main just for testing purposes

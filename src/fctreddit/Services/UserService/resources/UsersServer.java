@@ -17,8 +17,8 @@ public class UsersServer {
 	}
 	
 	public static final int PORT = 8080;
-	public static final String SERVICE = "UsersService";
-	private static final String SERVER_URI_FMT = "http://%s:%s/rest";
+	public static final String SERVICE = "UserService";
+	private static final String SERVER_URI_FMT = "http://%s:%s/rest/User";
 	
 	public static void main(String[] args) {
 		try {

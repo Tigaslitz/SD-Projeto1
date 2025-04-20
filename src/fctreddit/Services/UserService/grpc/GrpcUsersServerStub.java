@@ -8,7 +8,7 @@ import io.grpc.stub.StreamObserver;
 import fctreddit.api.User;
 import fctreddit.api.Interfaces.Result;
 import fctreddit.api.Interfaces.Users;
-import fctreddit.grpc.util.DataModelAdaptor;
+import fctreddit.Services.grpc.util.DataModelAdaptor;
 import fctreddit.Services.UserService.grpc.generated_java.UsersGrpc;
 import fctreddit.Services.UserService.grpc.generated_java.UsersProtoBuf.CreateUserArgs;
 import fctreddit.Services.UserService.grpc.generated_java.UsersProtoBuf.CreateUserResult;

@@ -1,8 +1,8 @@
-package fctreddit.grpc.util;
+package fctreddit.Services.grpc.util;
 
 import fctreddit.api.User;
-import lab4.impl.server.grpc.generated_java.UsersProtoBuf.GrpcUser;
-import lab4.impl.server.grpc.generated_java.UsersProtoBuf.GrpcUser.Builder;
+import fctreddit.Services.UserService.grpc.generated_java.UsersProtoBuf.GrpcUser;
+import fctreddit.Services.UserService.grpc.generated_java.UsersProtoBuf.GrpcUser.Builder;
 
 public class DataModelAdaptor {
 
@@ -15,8 +15,8 @@ public class DataModelAdaptor {
 				from.hasUserId() ? from.getUserId() : null, 
 				from.hasFullName() ? from.getFullName() : null,
 				from.hasEmail() ? from.getEmail() : null, 
-				from.hasPassword() ? from.getPassword() : null, 
-				from.hasAvatar() ? from.getAvatar() : null);	
+				from.hasPassword() ? from.getPassword() : null);
+				//from.hasAvatar() ? from.getAvatar() : null);
 	}
 
 	//Notice that optional values might not have a value, and 
@@ -36,8 +36,8 @@ public class DataModelAdaptor {
 		if(from.getFullName() != null)
 			b.setFullName( from.getFullName());
 		
-		if(from.getAvatar() != null)
-			b.setAvatar( from.getAvatar());
+		//if(from.getAvatar() != null)
+			//b.setAvatar( from.getAvatar());
 		
 		return b.build();
 	}

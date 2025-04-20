@@ -1,9 +1,10 @@
-package lab4.clients.rest;
+package fctreddit.Clients.rest;
 
 import java.net.URI;
 import java.util.List;
 import java.util.logging.Logger;
 
+import jakarta.ws.rs.core.GenericType;
 import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.client.ClientProperties;
 
@@ -15,11 +16,11 @@ import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
-import lab4.api.User;
-import lab4.api.java.Result;
-import lab4.api.java.Result.ErrorCode;
-import lab4.api.rest.RestUsers;
-import lab4.clients.java.UsersClient;
+import fctreddit.api.User;
+import fctreddit.api.Interfaces.Result;
+import fctreddit.api.Interfaces.Result.ErrorCode;
+import fctreddit.api.Rest.RestUsers;
+import fctreddit.Clients.java.UsersClient;
 
 public class RestUsersClient extends UsersClient {
 	private static Logger Log = Logger.getLogger(RestUsersClient.class.getName());
@@ -91,15 +92,63 @@ public class RestUsersClient extends UsersClient {
 	
 
 	public Result<User> updateUser(String userId, String password, User user) {
-		throw new RuntimeException("Not Implemented...");		
+        try {
+            Response r = target.path(userId)
+                    .queryParam(RestUsers.PASSWORD, password).request()
+                    .accept(MediaType.APPLICATION_JSON).
+                    put(Entity.entity(user, MediaType.APPLICATION_JSON));
+
+            int status = r.getStatus();
+            if (status != Status.OK.getStatusCode())
+                return Result.error(getErrorCodeFrom(status));
+            else
+                return Result.ok(r.readEntity(User.class));
+
+        } catch (ProcessingException x) {
+            Log.info(x.getMessage());
+        } catch( Exception x ) {
+            x.printStackTrace();
+        }
+        return Result.error(  ErrorCode.TIMEOUT );
 	}
 
 	public Result<User> deleteUser(String userId, String password) {
-		throw new RuntimeException("Not Implemented...");
+        try {
+            Response r = target.path(userId)
+                    .queryParam(RestUsers.PASSWORD, password).request()
+                    .delete();
+
+            int status = r.getStatus();
+            if (status != Status.OK.getStatusCode())
+                return Result.error(getErrorCodeFrom(status));
+            else
+                return Result.ok(r.readEntity(User.class));
+
+        } catch (ProcessingException x) {
+            Log.info(x.getMessage());
+        } catch( Exception x ) {
+            x.printStackTrace();
+        }
+        return Result.error(  ErrorCode.TIMEOUT );
 	}
 
 	public Result<List<User>> searchUsers(String pattern) {
-		throw new RuntimeException("Not Implemented...");
+        try {
+            Response r = target.queryParam(RestUsers.QUERY, pattern).
+                    request().accept(MediaType.APPLICATION_JSON).get();
+
+            int status = r.getStatus();
+            if (status != Status.OK.getStatusCode())
+                return Result.error(getErrorCodeFrom(status));
+            else
+                return Result.ok(r.readEntity(new GenericType<List<User>>() {}));
+
+        } catch (ProcessingException x) {
+            Log.info(x.getMessage());
+        } catch( Exception x ) {
+            x.printStackTrace();
+        }
+        return Result.error(  ErrorCode.TIMEOUT );
 	}
 
 	public static ErrorCode getErrorCodeFrom(int status) {

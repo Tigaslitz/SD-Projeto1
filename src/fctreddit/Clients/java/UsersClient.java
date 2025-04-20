@@ -1,10 +1,10 @@
-package lab4.clients.java;
+package fctreddit.Clients.java;
 
 import java.util.List;
 
-import lab4.api.User;
-import lab4.api.java.Result;
-import lab4.api.java.Users;
+import fctreddit.api.User;
+import fctreddit.api.Interfaces.Result;
+import fctreddit.api.Interfaces.Users;
 
 public abstract class UsersClient implements Users {
 	

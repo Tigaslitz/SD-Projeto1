@@ -16,6 +16,7 @@ public class UsersClass implements Users {
     private static Logger Log = Logger.getLogger(UsersClass.class.getName());
     private final Hibernate hibernate = Hibernate.getInstance();
 
+
     @Override
     public Result<String> createUser(User user) {
         Log.info("createUser : " + user);
@@ -38,10 +39,12 @@ public class UsersClass implements Users {
     public Result<User> getUser(String userId, String password) {
         Log.info("getUser : " + userId);
 
-        if (userId == null || password == null)
+        if (userId == null || password == null) {
+            Log.info("UserId or password null.");
             return Result.error(ErrorCode.BAD_REQUEST);
+        }
 
-        User user = null;
+        User user;
         try {
             user = hibernate.get(User.class, userId);
         } catch (Exception e) {
@@ -49,34 +52,88 @@ public class UsersClass implements Users {
             throw new WebApplicationException(Status.INTERNAL_SERVER_ERROR);
         }
 
-        if (user == null)
+        if (user == null) {
+            Log.info("User does not exist.");
             return Result.error(ErrorCode.NOT_FOUND);
+        }
 
-        if (!user.getPassword().equals(password))
+        if (!user.getPassword().equals(password)) {
+            Log.info("Password is incorrect.");
             return Result.error(ErrorCode.FORBIDDEN);
+        }
 
         return Result.ok(user);
     }
 
     @Override
     public Result<User> updateUser(String userId, String password, User userUpdate) {
-        // Lógica semelhante, aplicando alterações apenas se os campos não forem null
-        return Result.error(ErrorCode.NOT_IMPLEMENTED);
+        //TODO: Complete method
+        Log.info("updateUser : user = " + userId + "; pwd = " + password + " ; userData = " + userUpdate);
+
+        if (userUpdate == null) {
+            Log.info("User Data is null.");
+            return Result.error(ErrorCode.BAD_REQUEST);
+        }
+
+        Result<User> res = getUser(userId, password);
+
+        if (res.isOK()){
+            User user = res.value();
+
+            if (userUpdate.getFullName() != null)
+                user.setFullName(userUpdate.getFullName());
+
+            if (userUpdate.getEmail() != null)
+                user.setEmail(userUpdate.getEmail());
+
+            if (userUpdate.getPassword() != null)
+                user.setPassword(userUpdate.getPassword());
+
+            if (userUpdate.getAvatarUrl() != null)
+                user.setAvatarUrl(userUpdate.getAvatarUrl());
+
+            try{
+                hibernate.update(userUpdate);
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw new WebApplicationException(Status.INTERNAL_SERVER_ERROR);
+            }
+            return Result.ok(userUpdate);
+        }
+        return res;
+
     }
 
     @Override
     public Result<User> deleteUser(String userId, String password) {
-        // Lógica de apagar, limpar dados relacionados, etc.
-        return Result.error(ErrorCode.NOT_IMPLEMENTED);
+        // TODO: Complete method
+        Log.info("deleteUser : user = " + userId + "; pwd = " + password);
+
+        Result<User> res = getUser(userId, password);
+
+        if (res.isOK()) {
+            User userToDelete = res.value();
+
+            // TODO: Lógica de delete (depois de content service)
+            hibernate.delete(userToDelete);
+            try {
+                hibernate.delete(User.class, userId);
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw new WebApplicationException(Status.INTERNAL_SERVER_ERROR);
+            }
+            return Result.ok(res.value());
+        }
+        return res;
     }
 
     @Override
     public Result<List<User>> searchUsers(String pattern) {
+        Log.info("searchUsers : pattern = " + pattern);
         try {
             if (pattern == null) pattern = "";
             List<User> list = hibernate.jpql(
                     "SELECT u FROM User u WHERE LOWER(u.userId) LIKE LOWER('%" + pattern + "%')", User.class);
-            list.forEach(u -> u.setPassword(""));
             return Result.ok(list);
         } catch (Exception e) {
             e.printStackTrace();
