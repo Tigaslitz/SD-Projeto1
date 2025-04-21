@@ -1,10 +1,7 @@
 package fctreddit.Services.ContentService.java;
 
-import fctreddit.Clients.rest.RestUsersClient;
 import fctreddit.Discovery.Discovery;
 import fctreddit.Hibernate;
-import fctreddit.Services.ImageService.java.ImageClass;
-import fctreddit.api.Image;
 import fctreddit.api.Interfaces.Content;
 import fctreddit.api.Interfaces.Result;
 import fctreddit.api.Interfaces.Users;
@@ -14,13 +11,12 @@ import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.List;
 import java.util.logging.Logger;
 
 public class ContentClass implements Content {
 
-    private static Logger Log = Logger.getLogger(ImageClass.class.getName());
+    private static Logger Log = Logger.getLogger(ContentClass.class.getName());
     private final Hibernate hibernate = Hibernate.getInstance();
 
     Discovery discovery;
@@ -29,17 +25,7 @@ public class ContentClass implements Content {
     public ContentClass() throws IOException {
         discovery = new Discovery(Discovery.DISCOVERY_ADDR);
         discovery.start();
-        findServer();
-
-    }
-
-    //TODO: Implementação podre, rever
-    private void findServer(){
-        URI userServiceURI = discovery.knownUrisOf("users");
-        while (userServiceURI == null) {
-            userServiceURI = discovery.knownUrisOf("users");
-        }
-        usersServer = new RestUsersClient(userServiceURI);
+        usersServer = discovery.findServer("users");
     }
 
     @Override
@@ -64,7 +50,7 @@ public class ContentClass implements Content {
         }
         try {
             hibernate.persist(post);
-            return Result.ok(post.getPostId());
+            return Result.ok(post.getMediaUrl());
         } catch (Exception e) {
             Log.info("Failed to create Post: " + e.getMessage());
             throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR);
@@ -73,8 +59,36 @@ public class ContentClass implements Content {
 
     @Override
     public Result<List<String>> getPosts(long timestamp, String sortOrder) {
+        Log.info("getPosts : timestamp = " + timestamp + ", sortOrder = " + sortOrder);
 
-        return null;
+        try {
+            StringBuilder jpql = new StringBuilder("SELECT p.postId FROM Post p WHERE p.parentId IS NULL");
+
+            if (timestamp > 0) {
+                jpql.append(" AND p.creationTime >= ").append(timestamp);
+            }
+
+            if (sortOrder != null) {
+                switch (sortOrder) {
+                    case MOST_UP_VOTES -> jpql.append(" ORDER BY p.upVotes DESC, p.postId ASC");
+                    case MOST_REPLIES -> jpql.append(" ORDER BY SIZE(p.replies) DESC, p.postId ASC");
+                    default -> {
+                        Log.warning("Unknown sort order: " + sortOrder);
+                        return Result.error(Result.ErrorCode.BAD_REQUEST);
+                    }
+                }
+            } else {
+                jpql.append(" ORDER BY p.creationTime ASC");
+            }
+            Log.info("JPQL: " + jpql);
+
+            List<String> postIds = hibernate.jpql(jpql.toString(), String.class);
+            return Result.ok(postIds);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error(Result.ErrorCode.INTERNAL_ERROR);
+        }
     }
 
     @Override
@@ -94,46 +108,243 @@ public class ContentClass implements Content {
 
     @Override
     public Result<List<String>> getPostAnswers(String postId, long maxTimeout) {
-        return null;
+        Log.info("getPostAnswers : postId = " + postId + ", timeout = " + maxTimeout);
+
+        try {
+
+            Result<Post> post = getPost(postId);
+            if (!post.isOK())
+                return Result.error(post.error());
+
+            List<String> original = hibernate.jpql(
+                    "SELECT p.postId FROM Post p WHERE p.parentId = '" + postId + "' ORDER BY p.creationTime ASC",
+                    String.class);
+
+            // Se o timeout for maior que 0, espera por nova resposta (se surgir)
+            if (maxTimeout > 0) {
+                long startTime = System.currentTimeMillis();
+                while (System.currentTimeMillis() - startTime < maxTimeout) {
+
+                    List<String> current = hibernate.jpql(
+                            "SELECT p.postId FROM Post p WHERE p.parentId = '" + postId + "' ORDER BY p.creationTime ASC",
+                            String.class);
+
+                    if (current.size() != original.size()) {
+                        return Result.ok(current);
+                    }
+
+                    Thread.sleep(100); // espera 100ms antes de verificar novamente
+                }
+            }
+
+            return Result.ok(original);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error(Result.ErrorCode.INTERNAL_ERROR);
+        }
     }
 
     @Override
     public Result<Post> updatePost(String postId, String userPassword, Post post) {
-        return null;
+        Log.info("updatePost: post = " + postId + "; pwd = " + userPassword);
+
+        if (postId == null || post == null) {
+            Log.info("PostID or post is null.");
+            return Result.error(Result.ErrorCode.BAD_REQUEST);
+        }
+
+        Result<Post> res = getPost(postId);
+        if (!res.isOK())
+            return Result.error(res.error());
+
+        Post original = res.value();
+        Result<User> user = usersServer.getUser(post.getAuthorId(), userPassword);
+        if (!user.isOK())
+            return Result.error(user.error());
+
+        try{
+            if (post.getMediaUrl() != null)
+                original.setMediaUrl(post.getMediaUrl());
+
+            if (post.getContent() != null)
+                original.setContent(post.getContent());
+
+            hibernate.update(original);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR);
+        }
+        return Result.ok(post);
     }
 
     @Override
     public Result<Void> deletePost(String postId, String userPassword) {
-        return null;
+
+        Result<Post> res = getPost(postId);
+        if (!res.isOK())
+            return Result.error(res.error());
+
+        Post post = res.value();
+
+        Result<User> resUser = usersServer.getUser(post.getAuthorId(), userPassword);
+        if (!resUser.isOK())
+            return Result.error(resUser.error());
+
+        try{
+            deletePostRec(postId);
+        }catch (Exception e) {
+            e.printStackTrace();
+            throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR);
+        }
+        return Result.ok();
+    }
+
+    private void deletePostRec(String postId){
+        List<String> postReplies = getPostAnswers(postId, 0).value();
+        for (String current : postReplies){
+            deletePostRec(current);
+        }
+        hibernate.delete(getPost(postId).value());
     }
 
     @Override
     public Result<Void> upVotePost(String postId, String userId, String userPassword) {
-        return null;
+
+        Result<Post> res = getPost(postId);
+        if (!res.isOK())
+            return Result.error(res.error());
+
+        Result<User> resUser = usersServer.getUser(userId, userPassword);
+        if (!resUser.isOK())
+            return Result.error(resUser.error());
+
+        Post post = res.value();
+
+        if (post.getUpVotedUsers().contains(userId) || post.getDownVotedUsers().contains(userId))
+            return Result.error(Result.ErrorCode.CONFLICT);
+
+        try {
+
+            post.getUpVotedUsers().add(userId);
+            post.setUpVote(post.getUpVote() + 1);
+
+            hibernate.update(post);
+            return Result.ok();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR);
+        }
+
     }
 
     @Override
     public Result<Void> removeUpVotePost(String postId, String userId, String userPassword) {
-        return null;
+        Log.info("removeUpVotePost: postId = " + postId + ", userId = " + userId);
+        Result<Post> res = getPost(postId);
+        if (!res.isOK())
+            return Result.error(res.error());
+
+        Result<User> resUser = usersServer.getUser(userId, userPassword);
+        if (!resUser.isOK())
+            return Result.error(resUser.error());
+
+        Post post = res.value();
+
+        try {
+
+            if(!post.getUpVotedUsers().remove(userId))
+                return Result.error(Result.ErrorCode.CONFLICT);
+            post.setUpVote(post.getUpVote() - 1);
+
+            hibernate.update(post);
+            return Result.ok();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @Override
     public Result<Void> downVotePost(String postId, String userId, String userPassword) {
-        return null;
+        Result<Post> res = getPost(postId);
+        if (!res.isOK())
+            return Result.error(res.error());
+
+        Result<User> resUser = usersServer.getUser(userId, userPassword);
+        if (!resUser.isOK())
+            return Result.error(resUser.error());
+
+        Post post = res.value();
+
+        if (post.getUpVotedUsers().contains(userId) || post.getDownVotedUsers().contains(userId))
+            return Result.error(Result.ErrorCode.CONFLICT);
+
+        try {
+
+            post.getDownVotedUsers().add(userId);
+            post.setDownVote(post.getDownVote() + 1);
+
+            hibernate.update(post);
+            return Result.ok();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @Override
     public Result<Void> removeDownVotePost(String postId, String userId, String userPassword) {
-        return null;
+        Log.info("removeDownVotePost: postId = " + postId + ", userId = " + userId);
+        Result<Post> res = getPost(postId);
+        if (!res.isOK())
+            return Result.error(res.error());
+
+        Result<User> resUser = usersServer.getUser(userId, userPassword);
+        if (!resUser.isOK())
+            return Result.error(resUser.error());
+
+        Post post = res.value();
+
+        try {
+
+            if(!post.getDownVotedUsers().remove(userId))
+                return Result.error(Result.ErrorCode.CONFLICT);
+            post.setDownVote(post.getDownVote() - 1);
+
+            hibernate.update(post);
+            return Result.ok();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @Override
     public Result<Integer> getupVotes(String postId) {
-        return null;
+        Log.info("getUpVotes: postId = " + postId);
+        Result<Post> res = getPost(postId);
+        if (!res.isOK())
+            return Result.error(res.error());
+
+        Post post = res.value();
+
+        return Result.ok(post.getUpVote());
     }
 
     @Override
     public Result<Integer> getDownVotes(String postId) {
-        return null;
+        Log.info("getDownVotes: postId = " + postId);
+        Result<Post> res = getPost(postId);
+        if (!res.isOK())
+            return Result.error(res.error());
+
+        Post post = res.value();
+
+        return Result.ok(post.getDownVote());
     }
 }

@@ -1,5 +1,8 @@
 package fctreddit.Discovery;
 
+import fctreddit.Clients.rest.RestUsersClient;
+import fctreddit.api.Interfaces.Users;
+
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
@@ -152,11 +155,29 @@ public class Discovery {
 	 */
 	public URI knownUrisOf(String serviceName) {
 		// TODO: implement this method
-        try{
-            return services.get(serviceName);
-        } catch (Exception e) {
-            return null;
-        }
+		long deadline = System.currentTimeMillis() + DISCOVERY_RETRY_TIMEOUT;
+
+		while (System.currentTimeMillis() < deadline) {
+			URI uri = services.get(serviceName);
+
+			if (uri != null) {
+				return uri;
+			}
+
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				break;
+			}
+		}
+
+		return null; // timeout sem suficientes respostas
+
+	}
+
+	public Users findServer(String serviceName){
+		URI userServiceURI = knownUrisOf(serviceName);
+		return new RestUsersClient(userServiceURI);
 	}
 
 	// Main just for testing purposes

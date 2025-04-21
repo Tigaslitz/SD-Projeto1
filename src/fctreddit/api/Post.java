@@ -1,5 +1,8 @@
 package fctreddit.api;
 
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * Represents a Post and a Reply in the system
  */
@@ -14,8 +17,11 @@ public class Post {
 	private String parentUrl; //This should be null when this is a top level post.
 	private int upVote;
 	private int downVote;
-	
-	
+	private Set<String> upVotedUsers = new HashSet<>();
+	private Set<String> downVotedUsers = new HashSet<>();
+
+
+
 	public Post() {
 		
 	}
@@ -117,6 +123,23 @@ public class Post {
 	public void setDownVote(int downVote) {
 		this.downVote = downVote;
 	}
+
+	public Set<String> getUpVotedUsers() {
+		return upVotedUsers;
+	}
+
+	public void setUpVotedUsers(Set<String> upVotedUsers) {
+		this.upVotedUsers = upVotedUsers;
+	}
+
+	public Set<String> getDownVotedUsers() {
+		return downVotedUsers;
+	}
+
+	public void setDownVotedUsers(Set<String> downVotedUsers) {
+		this.downVotedUsers = downVotedUsers;
+	}
+
 
 	public int hashCode() {
 		final int prime = 31;

@@ -27,18 +27,10 @@ public class ImageClass implements Images {
     public ImageClass() throws IOException {
         discovery = new Discovery(Discovery.DISCOVERY_ADDR);
         discovery.start();
-        findServer();
+        usersServer = discovery.findServer("users");
 
     }
 
-    //TODO: Implementação podre, rever
-    private void findServer(){
-        URI userServiceURI = discovery.knownUrisOf("users");
-        while (userServiceURI == null) {
-            userServiceURI = discovery.knownUrisOf("users");
-        }
-       usersServer = new RestUsersClient(userServiceURI);
-    }
 
     @Override
     public Result<String> createImage(String userId, byte[] imageContents, String password) {

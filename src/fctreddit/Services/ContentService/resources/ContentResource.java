@@ -11,6 +11,7 @@ import fctreddit.api.Rest.RestContent;
 import fctreddit.api.User;
 import jakarta.ws.rs.WebApplicationException;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -18,6 +19,7 @@ public class ContentResource implements RestContent {
 
     private static Logger Log = Logger.getLogger(ContentResource.class.getName());
     private final Content impl = new ContentClass();
+
 
     @Override
     public String createPost(Post post, String userPassword) {
