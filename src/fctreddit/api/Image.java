@@ -1,25 +1,23 @@
 package fctreddit.api;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
+import jakarta.persistence.*;
 
 @Entity
 public class Image {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String imageId;
 
     private String userId;
 
-    @Lob
-    private byte[] contents;
+    private String filePath;
 
     public Image() {}
 
-    public Image(String userId, byte[] contents) {
+    public Image(String userId, String filePath) {
         this.userId = userId;
-        this.contents = contents;
+        this.filePath = filePath;
     }
 
     public String getImageId() {
@@ -38,12 +36,12 @@ public class Image {
         this.userId = userId;
     }
 
-    public byte[] getContents() {
-        return contents;
+    public String getFilePath() {
+        return filePath;
     }
 
-    public void setContents(byte[] contents) {
-        this.contents = contents;
+    public void setFilePath(String filePath) {
+        this.filePath = filePath;
     }
 }
 

@@ -9,6 +9,7 @@ import fctreddit.api.Interfaces.Users;
 import jakarta.ws.rs.WebApplicationException;
 import fctreddit.api.User;
 import fctreddit.api.Rest.RestUsers;
+import jakarta.ws.rs.core.Response.Status;
 
 public class UsersResource implements RestUsers {
 
@@ -60,16 +61,15 @@ public class UsersResource implements RestUsers {
 	}
 
 
-    private static Throwable errorCodeToStatus( Result.ErrorCode error ) {
-        var status =  switch( error) {
-            case NOT_FOUND -> io.grpc.Status.NOT_FOUND;
-            case CONFLICT -> io.grpc.Status.ALREADY_EXISTS;
-            case FORBIDDEN -> io.grpc.Status.PERMISSION_DENIED;
-            case NOT_IMPLEMENTED -> io.grpc.Status.UNIMPLEMENTED;
-            case BAD_REQUEST -> io.grpc.Status.INVALID_ARGUMENT;
-            default -> io.grpc.Status.INTERNAL;
+    private static Status errorCodeToStatus( Result.ErrorCode error ) {
+        return switch( error) {
+            case NOT_FOUND -> Status.NOT_FOUND;         // 404
+            case CONFLICT -> Status.CONFLICT;           // 409
+            case FORBIDDEN -> Status.FORBIDDEN;         // 403
+            case BAD_REQUEST -> Status.BAD_REQUEST;     // 400
+            case NOT_IMPLEMENTED -> Status.NOT_IMPLEMENTED; // 501
+            default -> Status.INTERNAL_SERVER_ERROR;    // 500
         };
 
-        return status.asException();
     }
 }

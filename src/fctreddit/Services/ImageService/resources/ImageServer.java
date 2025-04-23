@@ -1,5 +1,6 @@
 package fctreddit.Services.ImageService.resources;
 
+import fctreddit.Discovery.Discovery;
 import fctreddit.Services.UserService.resources.UsersResource;
 import fctreddit.Services.UserService.resources.UsersServer;
 import org.glassfish.jersey.jdkhttp.JdkHttpServerFactory;
@@ -18,20 +19,23 @@ public class ImageServer {
     }
 
     public static final int PORT = 8081;
-    public static final String SERVICE = "ImageService";
-    private static final String SERVER_URI_FMT = "http://%s:%s/rest/Image";
+    public static final String SERVICE = "Image";
+    private static final String SERVER_URI_FMT = "http://%s:%s/rest";
 
     public static void main(String[] args) {
         try {
 
             ResourceConfig config = new ResourceConfig();
-            config.register(UsersResource.class);
+            config.register(ImageResource.class);
 
             String ip = InetAddress.getLocalHost().getHostAddress();
             String serverURI = String.format(SERVER_URI_FMT, ip, PORT);
             JdkHttpServerFactory.createHttpServer( URI.create(serverURI), config);
 
             Log.info(String.format("%s Server ready @ %s\n",  SERVICE, serverURI));
+
+            Discovery discovery = new Discovery(Discovery.DISCOVERY_ADDR, SERVICE, serverURI);
+            discovery.start();
 
             //More code can be executed here...
         } catch( Exception e) {

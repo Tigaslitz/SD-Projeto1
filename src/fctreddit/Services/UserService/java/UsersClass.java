@@ -22,7 +22,7 @@ public class UsersClass implements Users {
         Log.info("createUser : " + user);
 
         if (user == null || user.getUserId() == null || user.getPassword() == null ||
-                user.getEmail() == null || user.getFullName() == null) {
+                user.getPassword().isEmpty() || user.getEmail() == null || user.getFullName() == null) {
             return Result.error(ErrorCode.BAD_REQUEST);
         }
 
@@ -39,9 +39,10 @@ public class UsersClass implements Users {
     public Result<User> getUser(String userId, String password) {
         Log.info("getUser : " + userId);
 
+
         if (userId == null || password == null) {
             Log.info("UserId or password null.");
-            return Result.error(ErrorCode.BAD_REQUEST);
+            return Result.error(ErrorCode.FORBIDDEN);
         }
 
         User user;
@@ -93,12 +94,12 @@ public class UsersClass implements Users {
                 user.setAvatarUrl(userUpdate.getAvatarUrl());
 
             try{
-                hibernate.update(userUpdate);
+                hibernate.update(user);
             } catch (Exception e) {
                 e.printStackTrace();
                 throw new WebApplicationException(Status.INTERNAL_SERVER_ERROR);
             }
-            return Result.ok(userUpdate);
+            return Result.ok(user);
         }
         return res;
 

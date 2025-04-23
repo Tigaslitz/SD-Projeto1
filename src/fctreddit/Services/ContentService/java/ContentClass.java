@@ -25,7 +25,7 @@ public class ContentClass implements Content {
     public ContentClass() throws IOException {
         discovery = new Discovery(Discovery.DISCOVERY_ADDR);
         discovery.start();
-        usersServer = discovery.findServer("users");
+        usersServer = discovery.findServer("Users");
     }
 
     @Override
@@ -42,12 +42,14 @@ public class ContentClass implements Content {
         }
 
         String parentPostURI = post.getParentUrl();
+        Log.info("parentPostURI: " + parentPostURI);
         if (parentPostURI != null) {
             Result<Post> parentPost = getPost(parentPostURI);
             if (!parentPost.isOK()) {
                 return Result.error(parentPost.error());
             }
         }
+
         try {
             hibernate.persist(post);
             return Result.ok(post.getMediaUrl());

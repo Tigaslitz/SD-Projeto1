@@ -1,15 +1,21 @@
 package fctreddit.api;
 
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+
 import java.util.HashSet;
 import java.util.Set;
 
 /**
  * Represents a Post and a Reply in the system
  */
-
+@Entity
 public class Post {
 
+    @Id
 	private String postId;
+
 	private String authorId;
 	private long creationTimestamp;
 	private String content;
@@ -17,7 +23,10 @@ public class Post {
 	private String parentUrl; //This should be null when this is a top level post.
 	private int upVote;
 	private int downVote;
+
+    @ElementCollection
 	private Set<String> upVotedUsers = new HashSet<>();
+    @ElementCollection
 	private Set<String> downVotedUsers = new HashSet<>();
 
 

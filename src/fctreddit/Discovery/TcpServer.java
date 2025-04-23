@@ -7,7 +7,7 @@ import java.util.logging.Logger;
  * Basic TCP server... 
  *
  */
-public class TcpServer {
+public class  TcpServer {
 	private static Logger Log = Logger.getLogger(TcpServer.class.getName());
 
     private static final int PORT = 9000;

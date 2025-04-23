@@ -1,5 +1,6 @@
 package fctreddit.Services.ContentService.resources;
 
+import fctreddit.Discovery.Discovery;
 import fctreddit.Services.UserService.resources.UsersResource;
 import fctreddit.Services.UserService.resources.UsersServer;
 import org.glassfish.jersey.jdkhttp.JdkHttpServerFactory;
@@ -10,22 +11,22 @@ import java.net.URI;
 import java.util.logging.Logger;
 
 public class ContentServer {
-    private static Logger Log = Logger.getLogger(UsersServer.class.getName());
+    private static Logger Log = Logger.getLogger(ContentServer.class.getName());
 
     static {
         System.setProperty("java.net.preferIPv4Stack", "true");
         System.setProperty("java.util.logging.SimpleFormatter.format", "%4$s: %5$s\n");
     }
 
-    public static final int PORT = 8080;
-    public static final String SERVICE = "ContentService";
-    private static final String SERVER_URI_FMT = "http://%s:%s/rest/Content";
+    public static final int PORT = 8082;
+    public static final String SERVICE = "Content";
+    private static final String SERVER_URI_FMT = "http://%s:%s/rest";
 
     public static void main(String[] args) {
         try {
 
             ResourceConfig config = new ResourceConfig();
-            config.register(UsersResource.class);
+            config.register(ContentResource.class);
 
             String ip = InetAddress.getLocalHost().getHostAddress();
             String serverURI = String.format(SERVER_URI_FMT, ip, PORT);
@@ -33,7 +34,9 @@ public class ContentServer {
 
             Log.info(String.format("%s Server ready @ %s\n",  SERVICE, serverURI));
 
-            //More code can be executed here...
+            Discovery discovery = new Discovery(Discovery.DISCOVERY_ADDR, SERVICE, serverURI);
+            discovery.start();
+
         } catch( Exception e) {
             Log.severe(e.getMessage());
         }

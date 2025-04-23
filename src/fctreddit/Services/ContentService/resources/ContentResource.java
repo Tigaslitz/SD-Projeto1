@@ -1,15 +1,13 @@
 package fctreddit.Services.ContentService.resources;
 
 import fctreddit.Services.ContentService.java.ContentClass;
-import fctreddit.Services.UserService.java.UsersClass;
-import fctreddit.Services.UserService.resources.UsersResource;
 import fctreddit.api.Interfaces.Content;
 import fctreddit.api.Interfaces.Result;
-import fctreddit.api.Interfaces.Users;
 import fctreddit.api.Post;
 import fctreddit.api.Rest.RestContent;
-import fctreddit.api.User;
 import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
 
 import java.io.IOException;
 import java.util.List;
@@ -19,6 +17,9 @@ public class ContentResource implements RestContent {
 
     private static Logger Log = Logger.getLogger(ContentResource.class.getName());
     private final Content impl = new ContentClass();
+
+    public ContentResource() throws IOException {
+    }
 
 
     @Override
@@ -112,16 +113,14 @@ public class ContentResource implements RestContent {
         return res.value();
     }
 
-    private static Throwable errorCodeToStatus( Result.ErrorCode error ) {
-        var status =  switch( error) {
-            case NOT_FOUND -> io.grpc.Status.NOT_FOUND;
-            case CONFLICT -> io.grpc.Status.ALREADY_EXISTS;
-            case FORBIDDEN -> io.grpc.Status.PERMISSION_DENIED;
-            case NOT_IMPLEMENTED -> io.grpc.Status.UNIMPLEMENTED;
-            case BAD_REQUEST -> io.grpc.Status.INVALID_ARGUMENT;
-            default -> io.grpc.Status.INTERNAL;
+    private static Status errorCodeToStatus(Result.ErrorCode error ) {
+        return switch( error) {
+            case NOT_FOUND -> Response.Status.NOT_FOUND;         // 404
+            case CONFLICT -> Response.Status.CONFLICT;           // 409
+            case FORBIDDEN -> Response.Status.FORBIDDEN;         // 403
+            case BAD_REQUEST -> Response.Status.BAD_REQUEST;     // 400
+            case NOT_IMPLEMENTED -> Response.Status.NOT_IMPLEMENTED; // 501
+            default -> Response.Status.INTERNAL_SERVER_ERROR;    // 500
         };
-
-        return status.asException();
     }
 }

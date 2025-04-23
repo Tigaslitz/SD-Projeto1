@@ -73,7 +73,7 @@ public class RestUsersClient extends UsersClient {
 				x.printStackTrace();
 			}
 		}
-		return Result.error(  ErrorCode.TIMEOUT );
+		return Result.error( ErrorCode.TIMEOUT );
 	}
 
 	public Result<User> getUser(String userId, String pwd) {
@@ -109,13 +109,14 @@ public class RestUsersClient extends UsersClient {
         } catch( Exception x ) {
             x.printStackTrace();
         }
-        return Result.error(  ErrorCode.TIMEOUT );
+        return Result.error( ErrorCode.INTERNAL_ERROR );
 	}
 
 	public Result<User> deleteUser(String userId, String password) {
         try {
             Response r = target.path(userId)
                     .queryParam(RestUsers.PASSWORD, password).request()
+                    .accept(MediaType.APPLICATION_JSON)
                     .delete();
 
             int status = r.getStatus();

@@ -2,6 +2,8 @@ package fctreddit.Clients.rest;
 
 import fctreddit.Clients.java.ImageClient;
 import fctreddit.api.Interfaces.Result;
+import fctreddit.api.Interfaces.Result.ErrorCode;
+import fctreddit.api.Rest.RestImage;
 import fctreddit.api.Rest.RestUsers;
 import fctreddit.api.User;
 import jakarta.ws.rs.ProcessingException;
@@ -20,7 +22,7 @@ import java.util.List;
 import java.util.logging.Logger;
 
 public class RestImageClient extends ImageClient {
-    private static Logger Log = Logger.getLogger(RestUsersClient.class.getName());
+    private static Logger Log = Logger.getLogger(RestImageClient.class.getName());
 
     final URI serverURI;
     final Client client;
@@ -35,17 +37,17 @@ public class RestImageClient extends ImageClient {
         config.property( ClientProperties.CONNECT_TIMEOUT, CONNECT_TIMEOUT);
 
         this.client = ClientBuilder.newClient(config);
-        target = client.target( serverURI ).path( RestUsers.PATH );
+        target = client.target( serverURI ).path( RestImage.PATH );
     }
 
-    //TODO: IMPLEMENTAR
     @Override
     public Result<String> createImage(String userId, byte[] imageContents, String password) {
         try {
 
-            Response r = target.request()
-                    .accept(MediaType.APPLICATION_JSON)
-                    .post(Entity.entity(imageContents, MediaType.APPLICATION_JSON));
+            Response r = target.path(userId)
+                    .queryParam(RestImage.PASSWORD, password)
+                    .request()
+                    .post(Entity.entity(imageContents, MediaType.APPLICATION_OCTET_STREAM));
 
             int status = r.getStatus();
             if (status != Response.Status.OK.getStatusCode())
@@ -58,49 +60,55 @@ public class RestImageClient extends ImageClient {
         } catch( Exception x ) {
             x.printStackTrace();
         }
-        return Result.error(  Result.ErrorCode.TIMEOUT );
+        return Result.error(ErrorCode.INTERNAL_ERROR);
     }
 
     @Override
     public Result<byte[]> getImage(String userId, String imageId) {
+        System.out.println("getImage called! userId = " + userId + ", imageId = " + imageId);
+
         try {
-            Response r = target.path( imageId )
+            Response r = target
+                    .path(userId).path(imageId)
                     .request()
-                    .accept(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_OCTET_STREAM)
                     .get();
 
             int status = r.getStatus();
             if (status != Response.Status.OK.getStatusCode())
                 return Result.error(getErrorCodeFrom(status));
             else
-                return Result.ok(r.readEntity(new GenericType<List<User>>() {}));
+                return Result.ok(r.readEntity(byte[].class));
 
         } catch (ProcessingException x) {
             Log.info(x.getMessage());
         } catch( Exception x ) {
             x.printStackTrace();
         }
-        return Result.error(  Result.ErrorCode.TIMEOUT );
+        return Result.error(ErrorCode.INTERNAL_ERROR );
     }
 
     @Override
     public Result<Void> deleteImage(String userId, String imageId, String password) {
         try {
-            Response r = target.queryParam(RestUsers.QUERY, pattern).
-                    request().accept(MediaType.APPLICATION_JSON).get();
+            Response r = target
+                    .path(userId).path(imageId)
+                    .queryParam(RestImage.PASSWORD, password)
+                    .request()
+                    .delete();
 
             int status = r.getStatus();
             if (status != Response.Status.OK.getStatusCode())
                 return Result.error(getErrorCodeFrom(status));
             else
-                return Result.ok(r.readEntity(new GenericType<List<User>>() {}));
+                return Result.ok();
 
         } catch (ProcessingException x) {
             Log.info(x.getMessage());
         } catch( Exception x ) {
             x.printStackTrace();
         }
-        return Result.error(  Result.ErrorCode.TIMEOUT );
+        return Result.error(ErrorCode.INTERNAL_ERROR);
     }
 
     public static Result.ErrorCode getErrorCodeFrom(int status) {

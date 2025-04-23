@@ -129,8 +129,8 @@ public class Discovery {
 					String msg = new String(pkt.getData(), 0, pkt.getLength());
 					String[] msgElems = msg.split(DELIMITER);
 					if (msgElems.length == 2) { // periodic announcement
-						System.out.printf("FROM %s (%s) : %s\n", pkt.getAddress().getHostName(),
-								pkt.getAddress().getHostAddress(), msg);
+//System.out.printf("FROM %s (%s) : %s\n", pkt.getAddress().getHostName(),
+								//pkt.getAddress().getHostAddress(), msg);
 						// TODO: to complete by recording the received information
                             String receivedServiceName = msgElems[0];
                             String receivedServiceURI = msgElems[1];
