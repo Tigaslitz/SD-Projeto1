@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import fctreddit.Services.UserService.grpc.generated_java.UsersProtoBuf;
 import io.grpc.Channel;
 import io.grpc.LoadBalancerRegistry;
 import io.grpc.ManagedChannelBuilder;
@@ -24,6 +25,10 @@ import fctreddit.Services.UserService.grpc.generated_java.UsersProtoBuf.GetUserA
 import fctreddit.Services.UserService.grpc.generated_java.UsersProtoBuf.GetUserResult;
 import fctreddit.Services.UserService.grpc.generated_java.UsersProtoBuf.GrpcUser;
 import fctreddit.Services.UserService.grpc.generated_java.UsersProtoBuf.SearchUserArgs;
+import fctreddit.Services.UserService.grpc.generated_java.UsersProtoBuf.UpdateUserArgs;
+import fctreddit.Services.UserService.grpc.generated_java.UsersProtoBuf.UpdateUserResult;
+import fctreddit.Services.UserService.grpc.generated_java.UsersProtoBuf.DeleteUserArgs;
+import fctreddit.Services.UserService.grpc.generated_java.UsersProtoBuf.DeleteUserResult;
 
 public class GrpcUsersClient extends UsersClient {
 
@@ -55,7 +60,8 @@ public class GrpcUsersClient extends UsersClient {
 	public Result<User> getUser(String userId, String password) {
 		try {
 			GetUserResult res = stub.getUser(GetUserArgs.newBuilder()
-					.setUserId(userId).setPassword(password)
+					.setUserId(userId)
+					.setPassword(password)
 					.build());
 			
 			return Result.ok(DataModelAdaptor.GrpcUser_to_User(res.getUser()));
@@ -66,12 +72,39 @@ public class GrpcUsersClient extends UsersClient {
 
 	@Override
 	public Result<User> updateUser(String userId, String pwd, User user) {
-		throw new RuntimeException("Not Implemented...");
+		try {
+			GrpcUser grpcUser = DataModelAdaptor.User_to_GrpcUser(user);
+
+			UpdateUserArgs request = UpdateUserArgs.newBuilder()
+					.setUserId(userId)
+					.setPassword(pwd)
+					.setUser(grpcUser)
+					.build();
+
+			UpdateUserResult response = stub.updateUser(request);
+
+			return Result.ok(DataModelAdaptor.GrpcUser_to_User(response.getUser()));
+
+		} catch (StatusRuntimeException sre) {
+			return Result.error( statusToErrorCode(sre.getStatus()));
+		}
 	}
 
 	@Override
 	public Result<User> deleteUser(String userId, String pwd) {
-		throw new RuntimeException("Not Implemented...");
+		try {
+			DeleteUserArgs request = DeleteUserArgs.newBuilder()
+					.setUserId(userId)
+					.setPassword(pwd)
+					.build();
+
+			DeleteUserResult response = stub.deleteUser(request);
+
+			return Result.ok(DataModelAdaptor.GrpcUser_to_User(response.getUser()));
+
+		} catch (StatusRuntimeException sre) {
+			return Result.error( statusToErrorCode(sre.getStatus()));
+		}
 	}
 
 	@Override

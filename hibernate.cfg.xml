@@ -7,7 +7,7 @@
 		<property name="connection.username">sa</property>
 		<property name="connection.password"></property>
 		<!-- JDBC connection pool settings ... using built-in test pool -->
-		<property name="connection.pool_size">1</property>
+		<property name="connection.pool_size">64</property>
 		<!-- Echo the SQL to stdout -->
 		<property name="show_sql">true</property>
 		<!-- Set the current session context -->
@@ -23,5 +23,6 @@
 		<mapping class="fctreddit.api.User" />
 		<mapping class="fctreddit.api.Post" />
         <mapping class="fctreddit.api.Image" />
+        <mapping class="fctreddit.api.Vote" />
     </session-factory>
 </hibernate-configuration>

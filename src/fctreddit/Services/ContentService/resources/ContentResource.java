@@ -41,6 +41,7 @@ public class ContentResource implements RestContent {
     @Override
     public Post getPost(String postId) {
         Result<Post> res = impl.getPost(postId);
+        Log.info("PILA " + res.toString());
         if (!res.isOK())
             throw new WebApplicationException(errorCodeToStatus(res.error()));
         return res.value();
@@ -114,7 +115,7 @@ public class ContentResource implements RestContent {
     }
 
     private static Status errorCodeToStatus(Result.ErrorCode error ) {
-        return switch( error) {
+        return switch (error) {
             case NOT_FOUND -> Response.Status.NOT_FOUND;         // 404
             case CONFLICT -> Response.Status.CONFLICT;           // 409
             case FORBIDDEN -> Response.Status.FORBIDDEN;         // 403

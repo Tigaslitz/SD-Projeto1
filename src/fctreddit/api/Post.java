@@ -1,12 +1,6 @@
 package fctreddit.api;
 
-import jakarta.persistence.ElementCollection;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-
-import java.util.HashSet;
-import java.util.Set;
-
+import jakarta.persistence.*;
 /**
  * Represents a Post and a Reply in the system
  */
@@ -15,21 +9,17 @@ public class Post {
 
     @Id
 	private String postId;
-
+    @Column(length = 1000)
 	private String authorId;
 	private long creationTimestamp;
+    @Column(length = 1000)
 	private String content;
+    @Column(length = 1000)
 	private String mediaUrl;
+    @Column(length = 1000)
 	private String parentUrl; //This should be null when this is a top level post.
 	private int upVote;
 	private int downVote;
-
-    @ElementCollection
-	private Set<String> upVotedUsers = new HashSet<>();
-    @ElementCollection
-	private Set<String> downVotedUsers = new HashSet<>();
-
-
 
 	public Post() {
 		
@@ -132,23 +122,6 @@ public class Post {
 	public void setDownVote(int downVote) {
 		this.downVote = downVote;
 	}
-
-	public Set<String> getUpVotedUsers() {
-		return upVotedUsers;
-	}
-
-	public void setUpVotedUsers(Set<String> upVotedUsers) {
-		this.upVotedUsers = upVotedUsers;
-	}
-
-	public Set<String> getDownVotedUsers() {
-		return downVotedUsers;
-	}
-
-	public void setDownVotedUsers(Set<String> downVotedUsers) {
-		this.downVotedUsers = downVotedUsers;
-	}
-
 
 	public int hashCode() {
 		final int prime = 31;

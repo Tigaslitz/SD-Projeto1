@@ -1,8 +1,12 @@
 package fctreddit.Services.grpc.util;
 
+import fctreddit.Services.ContentService.grpc.generated_java.ContentProtoBuf;
+import fctreddit.api.Post;
 import fctreddit.api.User;
 import fctreddit.Services.UserService.grpc.generated_java.UsersProtoBuf.GrpcUser;
 import fctreddit.Services.UserService.grpc.generated_java.UsersProtoBuf.GrpcUser.Builder;
+import fctreddit.Services.ContentService.grpc.generated_java.ContentProtoBuf.GrpcPost;
+//import fctreddit.Services.ContentService.grpc.generated_java.ContentProtoBuf.GrpcPost.Builder;
 
 public class DataModelAdaptor {
 
@@ -42,4 +46,45 @@ public class DataModelAdaptor {
 		return b.build();
 	}
 
+	public static GrpcPost Post_to_GrpcPost(Post from )  {
+		GrpcPost.Builder b = GrpcPost.newBuilder();
+
+		if(from.getPostId() != null)
+			b.setPostId( from.getPostId());
+
+		if(from.getAuthorId() != null)
+			b.setAuthorId( from.getAuthorId());
+
+		if(from.getCreationTimestamp() != 0)
+			b.setCreationTimestamp( from.getCreationTimestamp());
+
+		if(from.getContent() != null)
+			b.setContent( from.getContent());
+
+		if(from.getMediaUrl() != null)
+			b.setMediaUrl( from.getMediaUrl());
+
+		if(from.getParentUrl() != null)
+			b.setParentUrl( from.getParentUrl());
+
+		if(from.getUpVote() != 0)
+			b.setUpVote( from.getUpVote());
+
+		if(from.getDownVote() != 0)
+			b.setDownVote( from.getDownVote());
+
+		return b.build();
+	}
+
+	public static Post GrpcPost_to_Post( GrpcPost from )  {
+		return new Post(
+				from.hasPostId() ? from.getPostId() : null,
+				from.hasAuthorId() ? from.getAuthorId() : null,
+				from.hasCreationTimestamp() ? from.getCreationTimestamp() : 0,
+				from.hasContent() ? from.getContent() : null,
+				from.hasMediaUrl() ? from.getMediaUrl() : null,
+				from.hasParentUrl() ? from.getParentUrl() : null,
+				from.hasUpVote() ? from.getUpVote() : 0,
+				from.hasDownVote() ? from.getDownVote() : 0);
+	}
 }

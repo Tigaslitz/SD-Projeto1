@@ -7,17 +7,21 @@ import fctreddit.api.Interfaces.Result;
 import fctreddit.api.Interfaces.Users;
 import fctreddit.api.Post;
 import fctreddit.api.User;
+import fctreddit.api.Vote;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
 public class ContentClass implements Content {
 
     private static Logger Log = Logger.getLogger(ContentClass.class.getName());
     private final Hibernate hibernate = Hibernate.getInstance();
+    private static final AtomicLong idPostCounter = new AtomicLong();
+    private static final AtomicLong idVoteCounter = new AtomicLong();
 
     Discovery discovery;
     Users usersServer;
@@ -30,7 +34,7 @@ public class ContentClass implements Content {
 
     @Override
     public Result<String> createPost(Post post, String userPassword) {
-        Log.info("createPost");
+        Log.info("createPost " + post + " "+ userPassword);
 
         if (userPassword == null || post == null) {
             return Result.error(Result.ErrorCode.BAD_REQUEST);
@@ -42,17 +46,19 @@ public class ContentClass implements Content {
         }
 
         String parentPostURI = post.getParentUrl();
-        Log.info("parentPostURI: " + parentPostURI);
         if (parentPostURI != null) {
-            Result<Post> parentPost = getPost(parentPostURI);
-            if (!parentPost.isOK()) {
-                return Result.error(parentPost.error());
+            String[] parts = parentPostURI.split("/");
+            String parentPostId = parts[parts.length - 1];
+            Result<Post> res = getPost(parentPostId);
+            if (!res.isOK()) {
+                return Result.error(res.error());
             }
         }
-
         try {
+            post.setPostId(String.valueOf(idPostCounter.incrementAndGet()));
+            post.setCreationTimestamp(System.currentTimeMillis());
             hibernate.persist(post);
-            return Result.ok(post.getMediaUrl());
+            return Result.ok(post.getPostId());
         } catch (Exception e) {
             Log.info("Failed to create Post: " + e.getMessage());
             throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR);
@@ -64,23 +70,23 @@ public class ContentClass implements Content {
         Log.info("getPosts : timestamp = " + timestamp + ", sortOrder = " + sortOrder);
 
         try {
-            StringBuilder jpql = new StringBuilder("SELECT p.postId FROM Post p WHERE p.parentId IS NULL");
+            StringBuilder jpql = new StringBuilder("SELECT p.postId FROM Post p WHERE p.parentUrl IS NULL");
 
             if (timestamp > 0) {
-                jpql.append(" AND p.creationTime >= ").append(timestamp);
+                jpql.append(" AND p.creationTimestamp >= ").append(timestamp);
             }
 
             if (sortOrder != null) {
                 switch (sortOrder) {
-                    case MOST_UP_VOTES -> jpql.append(" ORDER BY p.upVotes DESC, p.postId ASC");
-                    case MOST_REPLIES -> jpql.append(" ORDER BY SIZE(p.replies) DESC, p.postId ASC");
+                    case MOST_UP_VOTES -> jpql.append(" ORDER BY p.upVote DESC, p.postId ASC");
+                    case MOST_REPLIES -> jpql.append(" ORDER BY p.replies DESC, p.postId ASC");
                     default -> {
                         Log.warning("Unknown sort order: " + sortOrder);
                         return Result.error(Result.ErrorCode.BAD_REQUEST);
                     }
                 }
             } else {
-                jpql.append(" ORDER BY p.creationTime ASC");
+                jpql.append(" ORDER BY p.creationTimestamp ASC");
             }
             Log.info("JPQL: " + jpql);
 
@@ -119,7 +125,7 @@ public class ContentClass implements Content {
                 return Result.error(post.error());
 
             List<String> original = hibernate.jpql(
-                    "SELECT p.postId FROM Post p WHERE p.parentId = '" + postId + "' ORDER BY p.creationTime ASC",
+                    "SELECT p.postId FROM Post p WHERE p.parentUrl LIKE CONCAT('%/', '"+postId+"') ORDER BY p.creationTimestamp ASC",
                     String.class);
 
             // Se o timeout for maior que 0, espera por nova resposta (se surgir)
@@ -128,7 +134,7 @@ public class ContentClass implements Content {
                 while (System.currentTimeMillis() - startTime < maxTimeout) {
 
                     List<String> current = hibernate.jpql(
-                            "SELECT p.postId FROM Post p WHERE p.parentId = '" + postId + "' ORDER BY p.creationTime ASC",
+                            "SELECT p.postId FROM Post p WHERE p.parentUrl LIKE CONCAT('%/', '"+postId+"') ORDER BY p.creationTimestamp ASC",
                             String.class);
 
                     if (current.size() != original.size()) {
@@ -182,7 +188,7 @@ public class ContentClass implements Content {
 
     @Override
     public Result<Void> deletePost(String postId, String userPassword) {
-
+        Log.info("deletePost: postId = " + postId + ", userPassword = " + userPassword);
         Result<Post> res = getPost(postId);
         if (!res.isOK())
             return Result.error(res.error());
@@ -223,14 +229,17 @@ public class ContentClass implements Content {
 
         Post post = res.value();
 
-        if (post.getUpVotedUsers().contains(userId) || post.getDownVotedUsers().contains(userId))
+        List<Vote> existingVotes = hibernate.jpql(
+                "SELECT v FROM Vote v WHERE v.postId = '" + postId + "' AND v.userId = '" + userId + "'", Vote.class
+        );
+
+        if (!existingVotes.isEmpty()) {
+            Log.warning("upVotePost: CONFLICT - User " + userId + " already voted post " + postId);
             return Result.error(Result.ErrorCode.CONFLICT);
-
+        }
         try {
-
-            post.getUpVotedUsers().add(userId);
+            hibernate.persist(new Vote(userId,String.valueOf(idVoteCounter.incrementAndGet()), postId, true));
             post.setUpVote(post.getUpVote() + 1);
-
             hibernate.update(post);
             return Result.ok();
 
@@ -256,10 +265,15 @@ public class ContentClass implements Content {
 
         try {
 
-            if(!post.getUpVotedUsers().remove(userId))
+            List<Vote> existingVotes = hibernate.jpql(
+                    "SELECT v FROM Vote v WHERE v.postId = '" + postId + "' AND v.userId = '" + userId + "'", Vote.class
+            );
+            if (existingVotes.isEmpty()) {
+                Log.warning("removeUpVotePost: CONFLICT - User " + userId + " did not voted post " + postId);
                 return Result.error(Result.ErrorCode.CONFLICT);
+            }
+            hibernate.delete(existingVotes.get(0));     //Only one vote possible
             post.setUpVote(post.getUpVote() - 1);
-
             hibernate.update(post);
             return Result.ok();
 
@@ -281,14 +295,18 @@ public class ContentClass implements Content {
 
         Post post = res.value();
 
-        if (post.getUpVotedUsers().contains(userId) || post.getDownVotedUsers().contains(userId))
+        List<Vote> existingVotes = hibernate.jpql(
+                "SELECT v FROM Vote v WHERE v.postId = '" + postId + "' AND v.userId = '" + userId + "'", Vote.class
+        );
+
+        if (!existingVotes.isEmpty()) {
+            Log.warning("upVotePost: CONFLICT - User " + userId + " already voted post " + postId);
             return Result.error(Result.ErrorCode.CONFLICT);
+        }
 
         try {
-
-            post.getDownVotedUsers().add(userId);
+            hibernate.persist(new Vote(userId,String.valueOf(idVoteCounter.incrementAndGet()), postId, false));
             post.setDownVote(post.getDownVote() + 1);
-
             hibernate.update(post);
             return Result.ok();
 
@@ -312,11 +330,15 @@ public class ContentClass implements Content {
         Post post = res.value();
 
         try {
-
-            if(!post.getDownVotedUsers().remove(userId))
+            List<Vote> existingVotes = hibernate.jpql(
+                    "SELECT v FROM Vote v WHERE v.postId = '" + postId + "' AND v.userId = '" + userId + "'", Vote.class
+            );
+            if (existingVotes.isEmpty()) {
+                Log.warning("removeUpVotePost: CONFLICT - User " + userId + " did not voted post " + postId);
                 return Result.error(Result.ErrorCode.CONFLICT);
+            }
+            hibernate.delete(existingVotes.get(0));     //Only one vote possible
             post.setDownVote(post.getDownVote() - 1);
-
             hibernate.update(post);
             return Result.ok();
 

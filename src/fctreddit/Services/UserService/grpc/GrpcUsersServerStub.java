@@ -56,12 +56,26 @@ public class GrpcUsersServerStub implements UsersGrpc.AsyncService, BindableServ
 
 	@Override
     public void updateUser(UpdateUserArgs request, StreamObserver<UpdateUserResult> responseObserver) {
-		throw new RuntimeException("Not Implemented...");
+		//throw new RuntimeException("Not Implemented...");
+		Result<User> res = impl.updateUser(request.getUserId(), request.getPassword(), DataModelAdaptor.GrpcUser_to_User(request.getUser()));
+		if( ! res.isOK() )
+			responseObserver.onError(errorCodeToStatus(res.error()));
+		else {
+			responseObserver.onNext( UpdateUserResult.newBuilder().setUser( DataModelAdaptor.User_to_GrpcUser(res.value())).build() );
+			responseObserver.onCompleted();
+		}
    }
 
 	@Override
     public void deleteUser(DeleteUserArgs request, StreamObserver<DeleteUserResult> responseObserver) {
-		throw new RuntimeException("Not Implemented...");
+		//throw new RuntimeException("Not Implemented...");
+		Result<User> res = impl.deleteUser(request.getUserId(), request.getPassword());
+		if( ! res.isOK() )
+			responseObserver.onError(errorCodeToStatus(res.error()));
+		else {
+			responseObserver.onNext( DeleteUserResult.newBuilder().setUser( DataModelAdaptor.User_to_GrpcUser(res.value())).build() );
+			responseObserver.onCompleted();
+		}
     }
 
 	@Override

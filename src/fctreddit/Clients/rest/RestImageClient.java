@@ -111,16 +111,16 @@ public class RestImageClient extends ImageClient {
         return Result.error(ErrorCode.INTERNAL_ERROR);
     }
 
-    public static Result.ErrorCode getErrorCodeFrom(int status) {
+    public static ErrorCode getErrorCodeFrom(int status) {
         return switch (status) {
-            case 200, 209 -> Result.ErrorCode.OK;
-            case 409 -> Result.ErrorCode.CONFLICT;
-            case 403 -> Result.ErrorCode.FORBIDDEN;
-            case 404 -> Result.ErrorCode.NOT_FOUND;
-            case 400 -> Result.ErrorCode.BAD_REQUEST;
-            case 500 -> Result.ErrorCode.INTERNAL_ERROR;
-            case 501 -> Result.ErrorCode.NOT_IMPLEMENTED;
-            default -> Result.ErrorCode.INTERNAL_ERROR;
+            case 200, 209 -> ErrorCode.OK;
+            case 409 -> ErrorCode.CONFLICT;
+            case 403 -> ErrorCode.FORBIDDEN;
+            case 404 -> ErrorCode.NOT_FOUND;
+            case 400 -> ErrorCode.BAD_REQUEST;
+            case 500 -> ErrorCode.INTERNAL_ERROR;
+            case 501 -> ErrorCode.NOT_IMPLEMENTED;
+            default -> ErrorCode.INTERNAL_ERROR;
         };
     }
 }
